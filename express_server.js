@@ -1,7 +1,9 @@
 const express = require('express');
+const morgan = require('morgan');
 const app = express();
 const PORT = 8081;
 
+app.use(morgan('dev'));
 app.set('view engine','ejs'); // Sets out default engine to ejs
 app.use(express.urlencoded({extended:true})); // creates and fills req.body
 
@@ -42,10 +44,17 @@ app.get('/urls/new', (req,res) => { // renders create new url form
   res.render('urls_new');
 });
 
+app.post('/urls/:id/delete', (req,res) => {
+  const id = req.params.id;
+  delete urlDatabase[id];
+  res.redirect('/urls');
+});
+
 app.get('/u/:id', (req,res) => {// redirects to the ids longURL in the database
   const longURL = urlDatabase[req.params.id];
   res.redirect(longURL);
 });
+
 app.get('/urls/:id', (req,res) => { // catch all get requst for urls. add url pages above
   const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id]};
   res.render('urls_show',templateVars);
