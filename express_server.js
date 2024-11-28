@@ -1,7 +1,9 @@
 const express = require('express');
 const app = express();
 const PORT = 8081;
-app.set('view engine','ejs');
+
+app.set('view engine','ejs'); // Sets out default engine to ejs
+app.use(express.urlencoded({extended:true})); // translates post request body so we can use it
 
 const urlDatabase = {
   b2xVn2: "http://www.lighthouselabs.ca",
@@ -29,7 +31,19 @@ app.get('/urls', (req,res) => {
   res.render('urls_index',templateVars);
 });
 
-app.get('/urls/:id', (req,res) => {
+app.post('/urls', (req,res) => {
+  console.log(req.body);
+  res.send('ok');
+});
+
+app.get('/urls/new', (req,res) => {
+  res.render('urls_new');
+});
+
+
+app.get('/urls/:id', (req,res) => { // catch all get requst for urls. add url pages above
   const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id]};
   res.render('urls_show',templateVars);
 });
+
+const generateRandomString = () => Math.random.toString(36).slice(2);
