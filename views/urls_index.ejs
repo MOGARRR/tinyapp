@@ -14,12 +14,13 @@
 <body>
   <header> <%- include('partials/_header') %></header>
   <main style="margin: 1em;">
-    <h3>My Urls</h3>
+    <h3>My URLs</h3>
     <table class="table">
       <thead>
         <tr>
           <th scope="col">Short Url ID</th>
           <th scope="col">Long Url ID</th>
+          <th scope="col">Edit URLs</th>
           <th scope="col">Delete</th>
         </tr>
       </thead>
@@ -29,8 +30,13 @@
             <td><%= id %></td>
             <td><%= urls[id] %></td>
             <td>
-              <form method="POST" action="/urls/<%= id %>/delete" in>
-                <button  type="submit" class="btn btnprimary">Delete</button>
+              <form method="GET" action="/urls/<%=id%>">
+                <button type="submit" class="btn btnprimary">Edit</button>
+              </form>
+            </td>
+            <td>
+              <form method="POST" action="/urls/<%= id %>/delete">
+                <button type="submit" class="btn btnprimary">Delete</button>
               </form>
             </td>
           </tr>

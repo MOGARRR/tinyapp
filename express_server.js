@@ -44,7 +44,7 @@ app.get('/urls/new', (req,res) => { // renders create new url form
   res.render('urls_new');
 });
 
-app.post('/urls/:id/delete', (req,res) => {
+app.post('/urls/:id/delete', (req,res) => { // deletes paramater id form database
   const id = req.params.id;
   delete urlDatabase[id];
   res.redirect('/urls');
@@ -53,6 +53,13 @@ app.post('/urls/:id/delete', (req,res) => {
 app.get('/u/:id', (req,res) => {// redirects to the ids longURL in the database
   const longURL = urlDatabase[req.params.id];
   res.redirect(longURL);
+});
+
+app.post('/urls/:id/edit', (req,res) => { // changes short url values to new longUrl and updates database. redirects to index when done
+  const id = req.params.id;
+  const newURL = req.body.longURL;
+  urlDatabase[id] = newURL;
+  res.redirect('/urls');
 });
 
 app.get('/urls/:id', (req,res) => { // catch all get requst for urls. add url pages above
