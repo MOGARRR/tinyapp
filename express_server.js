@@ -12,9 +12,6 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com",
 };
 
-// app.get('/', (req,res) => { // test route
-//   res.send('Hello!');
-// });
 
 app.listen(PORT, () => {
   console.log(`Example App listening on port ${PORT}`); // start server and which port
@@ -23,10 +20,6 @@ app.listen(PORT, () => {
 app.get('/urls.json', (req,res) => { // returns database json object
   res.json(urlDatabase);
 });
-
-// app.get('/hello', (req,res) => { html test route
-//   res.send("<html><body>Hello <b>World</b></body></html>\n");
-// });
 
 app.get('/urls', (req,res) => { // render index page
   const templateVars = {urls:urlDatabase};
@@ -65,6 +58,11 @@ app.post('/urls/:id/edit', (req,res) => { // changes short url values to new lon
 app.get('/urls/:id', (req,res) => { // catch all get requst for urls. add url pages above
   const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id]};
   res.render('urls_show',templateVars);
+});
+
+app.post('/login', (req,res) =>{
+  res.cookie('username',req.body.username);
+  res.redirect('/urls');
 });
 
 const generateRandomString = () => Math.random().toString(36).slice(6);
