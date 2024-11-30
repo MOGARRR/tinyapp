@@ -68,4 +68,8 @@ app.post('/login', (req,res) => { // Saves username POST request as a cookie and
   res.redirect('/urls');
 });
 
+app.post('/logout', (req,res) => {
+  res.clearCookie('username');
+  res.redirect('/urls');
+});
 const generateRandomString = () => Math.random().toString(36).slice(6);

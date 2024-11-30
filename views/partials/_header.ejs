@@ -36,7 +36,10 @@
         <div class="navbar-nav">
          Logged in as: <%= username %>
         </div>
-        <button class="btn">Logout</button>
+        <form method="POST" action="/logout">
+          <button type="submit" class="btn">Logout</button>
+        </form>
+        
         
         <% } %>
 
