@@ -1,9 +1,11 @@
 const express = require('express');
 const morgan = require('morgan');
+const cookieParser = require('cookie-parser');
 const app = express();
 const PORT = 8081;
 
-app.use(morgan('dev'));
+app.use(cookieParser()); // helps read values from cookies
+app.use(morgan('dev')); // console logs requests and status codes from server
 app.set('view engine','ejs'); // Sets out default engine to ejs
 app.use(express.urlencoded({extended:true})); // creates and fills req.body
 
@@ -22,7 +24,7 @@ app.get('/urls.json', (req,res) => { // returns database json object
 });
 
 app.get('/urls', (req,res) => { // render index page
-  const templateVars = {urls:urlDatabase};
+  const templateVars = {urls:urlDatabase, username: req.cookies['username']};
   res.render('urls_index',templateVars);
 });
 
@@ -34,7 +36,8 @@ app.post('/urls', (req,res) => { // post request to add new urls to database
 });
 
 app.get('/urls/new', (req,res) => { // renders create new url form
-  res.render('urls_new');
+  const templateVars = {username: req.cookies['username']};
+  res.render('urls_new', templateVars);
 });
 
 app.post('/urls/:id/delete', (req,res) => { // deletes paramater id form database
@@ -56,12 +59,12 @@ app.post('/urls/:id/edit', (req,res) => { // changes short url values to new lon
 });
 
 app.get('/urls/:id', (req,res) => { // catch all get requst for urls. add url pages above
-  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id]};
-  res.render('urls_show',templateVars);
+  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id], username: req.cookies['username']};
+  res.render('urls_show', templateVars);
 });
 
-app.post('/login', (req,res) =>{
-  res.cookie('username',req.body.username);
+app.post('/login', (req,res) => { // Saves username POST request as a cookie and redirects to url_index
+  res.cookie('username', req.body.username);
   res.redirect('/urls');
 });
 
