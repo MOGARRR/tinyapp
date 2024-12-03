@@ -18,8 +18,9 @@
         <a class="nav-item nav-link" href="/urls/new">Create New URL</a>
       </div>
     </div>
+    <div><%=  %></div>
 
-    <%if (!username) {%>
+    <%if (!users[userCookie]) {%>
     <form class="form-inline" method="POST" action="/login">
       <div>
         <input
@@ -34,13 +35,11 @@
     </form>
       <%} else {%>
         <div class="navbar-nav">
-         Logged in as: <%= username %>
+         Logged in as: <%= users[userCookie].email %>
         </div>
         <form method="POST" action="/logout">
           <button type="submit" class="btn">Logout</button>
         </form>
-        
-        
         <% } %>
 
 
