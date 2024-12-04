@@ -21,17 +21,12 @@
     <div><%=  %></div>
 
     <%if (!users[userCookie]) {%>
-    <form class="form-inline" method="POST" action="/login">
-      <div>
-        <input
-        class="form-control" 
-        type="text"
-        name="username"
-        placeholder="username:"
-        style="width: 300px; margin: 1em;"
-        />
-      </div>
+    <form class="form-inline" method="GET" action="/login">
       <button type="submit" class="btn">Login</button>
+    </form>
+    <h6 class="nav-item">|</h6>
+    <form class="form-inline" method="GET" action="/register">
+      <button type="submit" class="btn">Register</button>
     </form>
       <%} else {%>
         <div class="navbar-nav">
