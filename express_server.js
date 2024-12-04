@@ -1,6 +1,7 @@
 const express = require('express');
 const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
+const { emit } = require('nodemon');
 const app = express();
 const PORT = 8080;
 
@@ -13,7 +14,13 @@ const urlDatabase = {
   b2xVn2: "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com",
 };
-const users = {}
+const users = {
+  user1 : {
+    id: 'user1',
+    email: 'email@.com',
+    password:'hippo'
+  }
+}
 
 
 app.listen(PORT, () => {
@@ -81,14 +88,29 @@ app.get('/register', (req,res) => { // renders register page templateVars for he
 
 app.post('/register', (req,res) => { // on POST request 
   const newID = generateRandomString(); // random str for new id
-  res.cookie('user_id', newID); // create cookie with id value
-  const newUser = { // new object with request form values and cookie/id value
-    id: newID,
-    email: req.body.email,
-    password: req.body.password
-  };
-  users[newID] = newUser; // adds new user object to global database
-  res.redirect('urls'); // redirects to home url page
+  const newUser = {id: newID, email: req.body.email, password: req.body.password}; // new object with request form values and cookie/id value and adds new user object to global database
+
+  if (accountVerify(newUser)) { // if function returns true 
+    res.cookie('user_id', newID); // create cookie with id value
+    users[newID] = newUser; // add new user to users database
+    res.redirect('/urls'); // redirect to urls page
+  } else { // if function returns false
+    res.status(404).send('Error with registering'); // set status code to 400 and send them message with error 
+  }
 });
+
+const accountVerify = (obj) => { // function to veriy account passwords and emails
+  if (obj.email === '' || obj.password === '') {
+    return false;
+  }
+  for (const account in users) {
+    const user = users[account];
+    if (user.email === obj.email){
+      return false;
+    }
+  }
+  return true;
+};
+
 
 const generateRandomString = () => Math.random().toString(36).slice(6);
