@@ -19,7 +19,7 @@ const users = {
     email: 'e@mail.com',
     password:'hippo'
   }
-}
+};
 
 
 app.listen(PORT, () => {
@@ -35,7 +35,7 @@ app.post('/urls', (req,res) => { // POST / URLS : creates urls and updates url d
   const id = generateRandomString(); // make random url id
   const url = req.body.longURL; // get url from parsed data from post
   urlDatabase[id] = url;
-  res.redirect(`/urls/${id}`); 
+  res.redirect(`/urls/${id}`);
 });
 
 app.get('/urls/new', (req,res) => { // GET / URLS / NEW : renders urls_new page
@@ -54,7 +54,7 @@ app.get('/u/:id', (req,res) => {// GET / U / :ID : adds long url to url database
   res.redirect(longURL);
 });
 
-app.post('/urls/:id/edit', (req,res) => { // POST / URLS / :ID / EDIT : changes long url value of id and updates url database 
+app.post('/urls/:id/edit', (req,res) => { // POST / URLS / :ID / EDIT : changes long url value of id and updates url database
   const id = req.params.id;
   const newURL = req.body.longURL;
   urlDatabase[id] = newURL;
@@ -82,36 +82,35 @@ app.post('/register', (req,res) => { // POST / REGISTER : if no errors will upda
   const verifyInfo = accountExistCheck(newUser); // should return false to verify no account with same info exist
 
   if (newUser.email === '' || newUser.password === '') { // errors for empty form fields or register an existing account
-    res.status(400).send('Error with registering: Please fill in the fields'); 
+    res.status(400).send('Error with registering: Please fill in the fields');
   } else if (verifyInfo !== false) {
     res.status(400).send('Error with registering: Account already exist');
   } else {
     res.cookie('user_id', newID); // create cookie with id value
     users[newID] = newUser; // add new user to users database
-    res.redirect('/urls'); 
+    res.redirect('/urls');
   }
 });
 
 app.get('/login', (req,res) => { // GET / LOGIN : render login page
   const templateVars = {users, userCookie: req.cookies['user_id']};
-  res.render('login',templateVars)
+  res.render('login',templateVars);
 });
 
 app.post('/login', (req,res) => { // POST / LOGIN : if no errors will update user_id cookie and log user into their account
   const loginInfo = {email: req.body.email, password: req.body.password};
   const verifyInfo = accountExistCheck(loginInfo); //should return account id to create new user_id cookie for the user
 
-  if(loginInfo.email === '' || loginInfo.password === '') { // errors for empty fields, account not being found, or incorrect password
-    res.status(400).send('Error with login: Please fill in the fields'); 
+  if (loginInfo.email === '' || loginInfo.password === '') { // errors for empty fields, account not being found, or incorrect password
+    res.status(400).send('Error with login: Please fill in the fields');
   } else if (!verifyInfo) {
     res.status(400).send('Error with login: Account doesnt exist. Please try again or register a new account');
-  } else if (users[verifyInfo].password !== loginInfo.password){
+  } else if (users[verifyInfo].password !== loginInfo.password) {
     res.status(400).send('Error with login: Password is incorrect');
   } else {
     res.cookie('user_id', verifyInfo); // updates cookie to new account id
     res.redirect('/urls');
   }
-  
 });
 
 
@@ -127,7 +126,7 @@ const accountExistCheck = (obj) => { // returns matching object email value or r
 
 
 const generateRandomString = () => Math.random().toString(36).slice(6); // creates random alpha numeric string by doing the following:
-//math.random provides random values for a deciaml number ex. 0.12345 
+//math.random provides random values for a deciaml number ex. 0.12345
 //toString converts data type to string and uses basecase of 36 to include values of hexadecimal letter values
 //slice removes beginning half of value to return a randomized 6 character str of letters/numbers for unique ids
-//thank you for the idea Andy! 
+//thank you for the idea Andy!
