@@ -10,9 +10,16 @@ app.set('view engine','ejs'); // Sets out default engine to ejs
 app.use(express.urlencoded({extended:true})); // creates and fills req.body
 
 const urlDatabase = {
-  b2xVn2: "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com",
+  b2xVn2: {
+    longURL:"http://www.lighthouselabs.ca",
+    userID: 'user1'
+  },
+  "9sm5xK": {
+    longURL:"http://www.google.com",
+    userID : 'user1'
+  },
 };
+
 const users = {
   user1 : {
     id: 'user1',
@@ -33,11 +40,11 @@ app.get('/urls', (req,res) => { // GET / URLS : renders index page
 
 app.post('/urls', (req,res) => { // POST / URLS : creates urls and updates url database
   if (!req.cookies['user_id']) { 
-    res.end('Please log into account to use features');
-  } else { // sends html response if POST request is made while not logged in
+    res.end('Please log into account to use features'); // sends html response if POST request is made while not logged in
+  } else { 
     const id = generateRandomString(); // make random url id
     const url = req.body.longURL; // get url from parsed data from post
-    urlDatabase[id] = url;
+    urlDatabase[id] = {longURL: url , userID: req.cookies['user_id']};
     res.redirect(`/urls/${id}`);
   }
 });
@@ -48,27 +55,38 @@ app.get('/urls/new', (req,res) => { // GET / URLS / NEW : renders urls_new page
 });
 
 app.post('/urls/:id/delete', (req,res) => { // POST / URLS / :ID / DELETE : deletes request id from url database
-  const id = req.params.id;
-  delete urlDatabase[id];
-  res.redirect('/urls');
+  if (!req.cookies['user_id']) {
+    res.redirect('/login');
+  } else {
+    const id = req.params.id;
+    delete urlDatabase[id];
+    res.redirect('/urls');
+  }
 });
 
 app.get('/u/:id', (req,res) => {// GET / U / :ID : sends users to url or if url is not in database sends html message
   const id = req.params.id;
-  const longURL = urlDatabase[id];
-  urlDatabase[id] ? res.redirect(longURL) : res.send('Cannot find URL');
+  const longURL = urlDatabase[id].longURL;
+  urlDatabase[id] ? res.redirect(longURL) : res.status(400).send('Cannot find URL');
 });
 
 app.post('/urls/:id/edit', (req,res) => { // POST / URLS / :ID / EDIT : changes long url value of id and updates url database
   const id = req.params.id;
   const newURL = req.body.longURL;
-  urlDatabase[id] = newURL;
+  if (newURL === '') {
+    res.redirect('/urls');
+  }
+  urlDatabase[id].longURL = newURL;
   res.redirect('/urls');
 });
 
-app.get('/urls/:id', (req,res) => { // GET / URLS / :ID : a catch all that renders a page for any url id given
-  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id], users, userCookie: req.cookies['user_id']};
-  res.render('urls_show', templateVars);
+app.get('/urls/:id', (req,res) => { // GET / URLS / :ID : a catch all that renders a page for url in database or returns html error message
+  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id].longURL, users, userCookie: req.cookies['user_id']};
+  if (!req.cookies['user_id']){
+    res.redirect('/login');
+  } else {
+    urlDatabase[req.params.id] ? res.render('urls_show', templateVars) : res.status(400).send('Error: Cannot find url');
+  }
 });
 
 app.post('/logout', (req,res) => { // POST / LOGOUT : clears user_id cookie when user logs out
