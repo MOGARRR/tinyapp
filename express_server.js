@@ -81,7 +81,7 @@ app.post('/register', (req,res) => { // POST / REGISTER : if no errors will upda
   const newUser = {id: newID, email: req.body.email, password: req.body.password}; // new object with request form values and cookie/id value and adds new user object to global database
   const verifyInfo = accountExistCheck(newUser); // should return false to verify no account with same info exist
 
-  if (newUser.email=== '' || newUser.password === ' ') { // errors for empty form fields or register an existing account
+  if (newUser.email === '' || newUser.password === '') { // errors for empty form fields or register an existing account
     res.status(400).send('Error with registering: Please fill in the fields'); 
   } else if (verifyInfo !== false) {
     res.status(400).send('Error with registering: Account already exist');
