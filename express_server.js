@@ -73,7 +73,7 @@ app.post('/logout', (req,res) => { // POST / LOGOUT : clears user_id cookie when
 
 app.get('/register', (req,res) => { // GET / REGISTER : renders register page
   const templateVars = {users, userCookie: req.cookies['user_id']};
-  res.render('register', templateVars);
+  req.cookies['user_id'] ? res.redirect('/urls') : res.render('register',templateVars); // redirects to /urls if logged in and renders register page if not
 });
 
 app.post('/register', (req,res) => { // POST / REGISTER : if no errors will update users database with new user from request info and cookie with id
@@ -94,7 +94,7 @@ app.post('/register', (req,res) => { // POST / REGISTER : if no errors will upda
 
 app.get('/login', (req,res) => { // GET / LOGIN : render login page
   const templateVars = {users, userCookie: req.cookies['user_id']};
-  res.render('login',templateVars);
+  req.cookies['user_id'] ? res.redirect('/urls') && console.log(req.signedCookies['user_id']) : res.render('login',templateVars); // redirects to /urls if logged in and renders login page if not
 });
 
 app.post('/login', (req,res) => { // POST / LOGIN : if no errors will update user_id cookie and log user into their account
