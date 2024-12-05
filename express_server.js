@@ -23,7 +23,7 @@ const users = {
 
 
 app.listen(PORT, () => {
-  console.log(`Example App listening on port ${PORT}`); // start server and which port
+  console.log(`Starting sever on port ${PORT}`); // start server and which port
 });
 
 app.get('/urls', (req,res) => { // GET / URLS : renders index page
@@ -32,15 +32,19 @@ app.get('/urls', (req,res) => { // GET / URLS : renders index page
 });
 
 app.post('/urls', (req,res) => { // POST / URLS : creates urls and updates url database
-  const id = generateRandomString(); // make random url id
-  const url = req.body.longURL; // get url from parsed data from post
-  urlDatabase[id] = url;
-  res.redirect(`/urls/${id}`);
+  if (!req.cookies['user_id']) { 
+    res.end('Please log into account to use features');
+  } else { // sends html response if POST request is made while not logged in
+    const id = generateRandomString(); // make random url id
+    const url = req.body.longURL; // get url from parsed data from post
+    urlDatabase[id] = url;
+    res.redirect(`/urls/${id}`);
+  }
 });
 
 app.get('/urls/new', (req,res) => { // GET / URLS / NEW : renders urls_new page
   const templateVars = {users, userCookie: req.cookies['user_id']};
-  res.render('urls_new', templateVars);
+  req.cookies['user_id'] ? res.render('urls_new', templateVars) : res.redirect('/login');
 });
 
 app.post('/urls/:id/delete', (req,res) => { // POST / URLS / :ID / DELETE : deletes request id from url database
@@ -94,7 +98,7 @@ app.post('/register', (req,res) => { // POST / REGISTER : if no errors will upda
 
 app.get('/login', (req,res) => { // GET / LOGIN : render login page
   const templateVars = {users, userCookie: req.cookies['user_id']};
-  req.cookies['user_id'] ? res.redirect('/urls') && console.log(req.signedCookies['user_id']) : res.render('login',templateVars); // redirects to /urls if logged in and renders login page if not
+  req.cookies['user_id'] ? res.redirect('/urls') : res.render('login',templateVars); // redirects to /urls if logged in and renders login page if not
 });
 
 app.post('/login', (req,res) => { // POST / LOGIN : if no errors will update user_id cookie and log user into their account
