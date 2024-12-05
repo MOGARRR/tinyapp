@@ -53,9 +53,10 @@ app.post('/urls/:id/delete', (req,res) => { // POST / URLS / :ID / DELETE : dele
   res.redirect('/urls');
 });
 
-app.get('/u/:id', (req,res) => {// GET / U / :ID : adds long url to url database
-  const longURL = urlDatabase[req.params.id];
-  res.redirect(longURL);
+app.get('/u/:id', (req,res) => {// GET / U / :ID : sends users to url or if url is not in database sends html message
+  const id = req.params.id;
+  const longURL = urlDatabase[id];
+  urlDatabase[id] ? res.redirect(longURL) : res.send('Cannot find URL');
 });
 
 app.post('/urls/:id/edit', (req,res) => { // POST / URLS / :ID / EDIT : changes long url value of id and updates url database
