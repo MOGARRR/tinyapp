@@ -1,6 +1,7 @@
 const express = require('express');
 const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
+const bcrypt = require('bcryptjs');
 const app = express();
 const PORT = 8080;
 
@@ -9,7 +10,8 @@ app.use(morgan('dev')); // console logs requests and status codes from server
 app.set('view engine','ejs'); // Sets out default engine to ejs
 app.use(express.urlencoded({extended:true})); // creates and fills req.body
 
-const urlDatabase = {
+// url database
+const urlDatabase = { // temporary contains seeds for development
   b2xVn2: {
     longURL:"http://www.lighthouselabs.ca",
     userID: 'user1'
@@ -19,12 +21,12 @@ const urlDatabase = {
     userID : 'user1'
   },
 };
-
-const users = {
+// user database
+const users = { // temporary contains seeds for development
   user1 : {
     id: 'user1',
     email: 'e@mail.com',
-    password:'hippo'
+    password: bcrypt.hashSync('hippo', 10)
   }
 };
 
@@ -118,8 +120,10 @@ app.get('/register', (req,res) => { // GET / REGISTER : renders register page
 
 app.post('/register', (req,res) => { // POST / REGISTER : if no errors will update users database with new user from request info and cookie with id
   const newID = generateRandomString(); // random str for new id
-  const newUser = {id: newID, email: req.body.email, password: req.body.password}; // new object with request form values and cookie/id value and adds new user object to global database
+  console.log('newuser id =',newID);
+  const newUser = {id: newID, email: req.body.email, password: bcrypt.hashSync(req.body.password,10)}; // new object with request form values and cookie/id value and adds new user object to global database
   const verifyInfo = accountExistCheck(newUser); // should return false to verify no account with same info exist
+  console.log(newUser);
 
   if (newUser.email === '' || newUser.password === '') { // errors for empty form fields or register an existing account
     res.status(400).send('Error with registering: Please fill in the fields');
@@ -145,7 +149,7 @@ app.post('/login', (req,res) => { // POST / LOGIN : if no errors will update use
     res.status(400).send('Error with login: Please fill in the fields');
   } else if (!verifyInfo) {
     res.status(400).send('Error with login: Account doesnt exist. Please try again or register a new account');
-  } else if (users[verifyInfo].password !== loginInfo.password) {
+  } else if (!bcrypt.compareSync(loginInfo.password, users[verifyInfo].password)) {
     res.status(400).send('Error with login: Password is incorrect');
   } else {
     res.cookie('user_id', verifyInfo); // updates cookie to new account id
