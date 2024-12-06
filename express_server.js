@@ -34,8 +34,13 @@ app.listen(PORT, () => {
 });
 
 app.get('/urls', (req,res) => { // GET / URLS : renders index page
-  const templateVars = {urls:urlDatabase, users , userCookie: req.cookies['user_id']};
-  res.render('urls_index',templateVars);
+  if (!req.cookies['user_id']) {
+    res.redirect('/login');
+  } else {
+    const userURLs = urlForUsers(req.cookies['user_id']);
+    const templateVars = {urls:userURLs, users , userCookie: req.cookies['user_id']};
+    res.render('urls_index',templateVars);
+  }
 });
 
 app.post('/urls', (req,res) => { // POST / URLS : creates urls and updates url database
@@ -55,36 +60,48 @@ app.get('/urls/new', (req,res) => { // GET / URLS / NEW : renders urls_new page
 });
 
 app.post('/urls/:id/delete', (req,res) => { // POST / URLS / :ID / DELETE : deletes request id from url database
-  if (!req.cookies['user_id']) {
-    res.redirect('/login');
+  const userURLs = urlForUsers(req.cookies['user_id']);
+  const id = req.params.id;
+  if (!userURLs[id]) {
+    res.status(400).send('Error: You dont own this url');
   } else {
-    const id = req.params.id;
     delete urlDatabase[id];
     res.redirect('/urls');
   }
 });
 
 app.get('/u/:id', (req,res) => {// GET / U / :ID : sends users to url or if url is not in database sends html message
+  const userURLs = urlForUsers(req.cookies['user_id']); // gets users url object
   const id = req.params.id;
-  const longURL = urlDatabase[id].longURL;
+  if (!userURLs[id]) { // if id key is not in user object 
+    res.status(400).send('Error: You dont own this url');
+  } else {
+    const longURL = urlDatabase[id].longURL;
   urlDatabase[id] ? res.redirect(longURL) : res.status(400).send('Cannot find URL');
+  }
 });
 
 app.post('/urls/:id/edit', (req,res) => { // POST / URLS / :ID / EDIT : changes long url value of id and updates url database
+  const userUrls = urlForUsers(req.cookies['user_id']);
   const id = req.params.id;
   const newURL = req.body.longURL;
-  if (newURL === '') {
+
+  if (!userUrls[id]){
+    res.status(400).send('Error: You dont own this url');
+  } else if (newURL === '') {
+    res.status(400).send('Error: Cannot leave url empty');
+  } else {
+    urlDatabase[id].longURL = newURL;
     res.redirect('/urls');
   }
-  urlDatabase[id].longURL = newURL;
-  res.redirect('/urls');
 });
 
 app.get('/urls/:id', (req,res) => { // GET / URLS / :ID : a catch all that renders a page for url in database or returns html error message
-  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id].longURL, users, userCookie: req.cookies['user_id']};
-  if (!req.cookies['user_id']){
-    res.redirect('/login');
+  const userURLs = urlForUsers(req.cookies['user_id']);
+  if (!userURLs[req.params.id]) {
+    res.status(400).send('Error: You dont own this url');
   } else {
+    const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id].longURL, users, userCookie: req.cookies['user_id']};
     urlDatabase[req.params.id] ? res.render('urls_show', templateVars) : res.status(400).send('Error: Cannot find url');
   }
 });
@@ -146,6 +163,17 @@ const accountExistCheck = (obj) => { // returns matching object email value or r
   }
   return false;
 };
+
+const urlForUsers = (id) => { // returns an object with id objects from url database if the userID and argument id match
+  const result = {};
+  for (const shortId in urlDatabase) {
+    const idInfo = urlDatabase[shortId];
+    if(idInfo.userID === id) {
+      result[shortId] = idInfo;
+    }
+  }
+  return result;
+}
 
 
 const generateRandomString = () => Math.random().toString(36).slice(6); // creates random alpha numeric string by doing the following:
