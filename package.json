@@ -25,7 +25,9 @@
     "express": "^4.21.1"
   },
   "devDependencies": {
-    "nodemon": "^3.1.7",
-    "morgan": "^1.10.0"
+    "chao": "^1.0.4",
+    "mocha": "^11.0.1",
+    "morgan": "^1.10.0",
+    "nodemon": "^3.1.7"
   }
 }
