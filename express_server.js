@@ -1,11 +1,15 @@
 const express = require('express');
 const morgan = require('morgan');
-const cookieParser = require('cookie-parser');
+const cookieSession = require('cookie-session');
 const bcrypt = require('bcryptjs');
+const salt = 10;
 const app = express();
 const PORT = 8080;
 
-app.use(cookieParser()); // helps read values from cookies
+app.use(cookieSession({
+  name: 'session',
+  keys:['cookieJar']
+})); // helps read values from cookies
 app.use(morgan('dev')); // console logs requests and status codes from server
 app.set('view engine','ejs'); // Sets out default engine to ejs
 app.use(express.urlencoded({extended:true})); // creates and fills req.body
@@ -26,7 +30,7 @@ const users = { // temporary contains seeds for development
   user1 : {
     id: 'user1',
     email: 'e@mail.com',
-    password: bcrypt.hashSync('hippo', 10)
+    password: bcrypt.hashSync('hippo', salt)
   }
 };
 
@@ -36,33 +40,33 @@ app.listen(PORT, () => {
 });
 
 app.get('/urls', (req,res) => { // GET / URLS : renders index page
-  if (!req.cookies['user_id']) {
+  if (!req.session.user_id) {
     res.redirect('/login');
   } else {
-    const userURLs = urlForUsers(req.cookies['user_id']);
-    const templateVars = {urls:userURLs, users , userCookie: req.cookies['user_id']};
+    const userURLs = urlForUsers(req.session.user_id);
+    const templateVars = {urls:userURLs, users , userCookie: req.session.user_id};
     res.render('urls_index',templateVars);
   }
 });
 
 app.post('/urls', (req,res) => { // POST / URLS : creates urls and updates url database
-  if (!req.cookies['user_id']) { 
+  if (!req.session.user_id) { 
     res.end('Please log into account to use features'); // sends html response if POST request is made while not logged in
   } else { 
     const id = generateRandomString(); // make random url id
     const url = req.body.longURL; // get url from parsed data from post
-    urlDatabase[id] = {longURL: url , userID: req.cookies['user_id']};
+    urlDatabase[id] = {longURL: url , userID: req.session.user_id};
     res.redirect(`/urls/${id}`);
   }
 });
 
 app.get('/urls/new', (req,res) => { // GET / URLS / NEW : renders urls_new page
-  const templateVars = {users, userCookie: req.cookies['user_id']};
-  req.cookies['user_id'] ? res.render('urls_new', templateVars) : res.redirect('/login');
+  const templateVars = {users, userCookie: req.session.user_id};
+  req.session.user_id ? res.render('urls_new', templateVars) : res.redirect('/login');
 });
 
 app.post('/urls/:id/delete', (req,res) => { // POST / URLS / :ID / DELETE : deletes request id from url database
-  const userURLs = urlForUsers(req.cookies['user_id']);
+  const userURLs = urlForUsers(req.session.user_id);
   const id = req.params.id;
   if (!userURLs[id]) {
     res.status(400).send('Error: You dont own this url');
@@ -73,7 +77,7 @@ app.post('/urls/:id/delete', (req,res) => { // POST / URLS / :ID / DELETE : dele
 });
 
 app.get('/u/:id', (req,res) => {// GET / U / :ID : sends users to url or if url is not in database sends html message
-  const userURLs = urlForUsers(req.cookies['user_id']); // gets users url object
+  const userURLs = urlForUsers(req.session.user_id); // gets users url object
   const id = req.params.id;
   if (!userURLs[id]) { // if id key is not in user object 
     res.status(400).send('Error: You dont own this url');
@@ -84,7 +88,7 @@ app.get('/u/:id', (req,res) => {// GET / U / :ID : sends users to url or if url 
 });
 
 app.post('/urls/:id/edit', (req,res) => { // POST / URLS / :ID / EDIT : changes long url value of id and updates url database
-  const userUrls = urlForUsers(req.cookies['user_id']);
+  const userUrls = urlForUsers(req.session.user_id);
   const id = req.params.id;
   const newURL = req.body.longURL;
 
@@ -99,46 +103,44 @@ app.post('/urls/:id/edit', (req,res) => { // POST / URLS / :ID / EDIT : changes 
 });
 
 app.get('/urls/:id', (req,res) => { // GET / URLS / :ID : a catch all that renders a page for url in database or returns html error message
-  const userURLs = urlForUsers(req.cookies['user_id']);
+  const userURLs = urlForUsers(req.session.user_id);
   if (!userURLs[req.params.id]) {
     res.status(400).send('Error: You dont own this url');
   } else {
-    const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id].longURL, users, userCookie: req.cookies['user_id']};
+    const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id].longURL, users, userCookie: req.session.user_id};
     urlDatabase[req.params.id] ? res.render('urls_show', templateVars) : res.status(400).send('Error: Cannot find url');
   }
 });
 
 app.post('/logout', (req,res) => { // POST / LOGOUT : clears user_id cookie when user logs out
-  res.clearCookie('user_id');
+  req.session = null;
   res.redirect('/login');
 });
 
 app.get('/register', (req,res) => { // GET / REGISTER : renders register page
-  const templateVars = {users, userCookie: req.cookies['user_id']};
-  req.cookies['user_id'] ? res.redirect('/urls') : res.render('register',templateVars); // redirects to /urls if logged in and renders register page if not
+  const templateVars = {users, userCookie: req.session.user_id};
+  req.session.user_id ? res.redirect('/urls') : res.render('register',templateVars); // redirects to /urls if logged in and renders register page if not
 });
 
 app.post('/register', (req,res) => { // POST / REGISTER : if no errors will update users database with new user from request info and cookie with id
   const newID = generateRandomString(); // random str for new id
-  console.log('newuser id =',newID);
-  const newUser = {id: newID, email: req.body.email, password: bcrypt.hashSync(req.body.password,10)}; // new object with request form values and cookie/id value and adds new user object to global database
+  const newUser = {id: newID, email: req.body.email, password: bcrypt.hashSync(req.body.password, salt)}; // new object with request form values and cookie/id value and adds new user object to global database
   const verifyInfo = accountExistCheck(newUser); // should return false to verify no account with same info exist
-  console.log(newUser);
 
   if (newUser.email === '' || newUser.password === '') { // errors for empty form fields or register an existing account
     res.status(400).send('Error with registering: Please fill in the fields');
   } else if (verifyInfo !== false) {
     res.status(400).send('Error with registering: Account already exist');
   } else {
-    res.cookie('user_id', newID); // create cookie with id value
+    req.session.user_id = newID; // create cookie with id value
     users[newID] = newUser; // add new user to users database
     res.redirect('/urls');
   }
 });
 
 app.get('/login', (req,res) => { // GET / LOGIN : render login page
-  const templateVars = {users, userCookie: req.cookies['user_id']};
-  req.cookies['user_id'] ? res.redirect('/urls') : res.render('login',templateVars); // redirects to /urls if logged in and renders login page if not
+  const templateVars = {users, userCookie: req.session.user_id};
+  req.session.user_id ? res.redirect('/urls') : res.render('login',templateVars); // redirects to /urls if logged in and renders login page if not
 });
 
 app.post('/login', (req,res) => { // POST / LOGIN : if no errors will update user_id cookie and log user into their account
@@ -152,12 +154,12 @@ app.post('/login', (req,res) => { // POST / LOGIN : if no errors will update use
   } else if (!bcrypt.compareSync(loginInfo.password, users[verifyInfo].password)) {
     res.status(400).send('Error with login: Password is incorrect');
   } else {
-    res.cookie('user_id', verifyInfo); // updates cookie to new account id
+    req.session.user_id = verifyInfo; // updates cookie to new account id
     res.redirect('/urls');
   }
 });
 
-
+// move to seperate helper file
 const accountExistCheck = (obj) => { // returns matching object email value or returns false if no object match argument
   for (const account in users) {
     const user = users[account];
@@ -185,3 +187,5 @@ const generateRandomString = () => Math.random().toString(36).slice(6); // creat
 //toString converts data type to string and uses basecase of 36 to include values of hexadecimal letter values
 //slice removes beginning half of value to return a randomized 6 character str of letters/numbers for unique ids
 //thank you for the idea Andy!
+
+//
