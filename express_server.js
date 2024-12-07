@@ -16,15 +16,18 @@ app.use(morgan('dev')); // console logs requests and status codes from server
 app.set('view engine','ejs'); // Sets out default engine to ejs
 app.use(express.urlencoded({extended:true})); // creates and fills req.body
 app.use(methodOverride('_method'));
+
 // url database
 const urlDatabase = { // temporary contains seeds for development
   b2xVn2: {
     longURL:"http://www.lighthouselabs.ca",
-    userID: 'user1'
+    userID: 'user1',
+    urlVisits: 0
   },
   "9sm5xK": {
     longURL:"http://www.google.com",
-    userID : 'user1'
+    userID : 'user1',
+    urlVisits: 0
   },
 };
 // user database
@@ -41,6 +44,8 @@ app.listen(PORT, () => {
   console.log(`Starting sever on port ${PORT}`); // start server and which port
 });
 
+// GET ROUTES //
+
 app.get('/urls', (req,res) => { // GET / URLS : renders index page
   if (!req.session.user_id) {
     res.redirect('/login');
@@ -51,22 +56,44 @@ app.get('/urls', (req,res) => { // GET / URLS : renders index page
   }
 });
 
-app.post('/urls', (req,res) => { // POST / URLS : creates urls and updates url database
-  if (!req.session.user_id) { 
-    res.end('Please log into account to use features'); // sends html response if POST request is made while not logged in
-  } else { 
-    const id = generateRandomString(); // make random url id
-    const url = req.body.longURL; // get url from parsed data from post
-    urlDatabase[id] = {longURL: url , userID: req.session.user_id};
-    res.redirect(`/urls/${id}`);
-  }
-});
-
 app.get('/urls/new', (req,res) => { // GET / URLS / NEW : renders urls_new page
   const templateVars = {users, userCookie: req.session.user_id};
   req.session.user_id ? res.render('urls_new', templateVars) : res.redirect('/login');
 });
 
+app.get('/u/:id', (req,res) => {// GET / U / :ID : sends users to url or if url is not in database sends html message
+  const id = req.params.id;
+
+  if(urlDatabase[id]){
+    const longURL = urlDatabase[id].longURL;
+    urlDatabase[id].urlVisits ++;
+    res.redirect(longURL);
+  } else {
+    res.status(400).send('Cannot find URL');
+  }  
+});
+
+app.get('/urls/:id', (req,res) => { // GET / URLS / :ID : a catch all that renders a page for url in database or returns html error message
+  const userURLs = userUrlsCheck(req.session.user_id, urlDatabase);
+  if (!userURLs[req.params.id]) {
+    res.status(400).send('Error: You dont own this url');
+  } else {
+    const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id].longURL, users, userCookie: req.session.user_id};
+    urlDatabase[req.params.id] ? res.render('urls_show', templateVars) : res.status(400).send('Error: Cannot find url');
+  }
+});
+
+app.get('/register', (req,res) => { // GET / REGISTER : renders register page
+  const templateVars = {users, userCookie: req.session.user_id};
+  req.session.user_id ? res.redirect('/urls') : res.render('register',templateVars); // redirects to /urls if logged in and renders register page if not
+});
+
+app.get('/login', (req,res) => { // GET / LOGIN : render login page
+  const templateVars = {users, userCookie: req.session.user_id};
+  req.session.user_id ? res.redirect('/urls') : res.render('login',templateVars); // redirects to /urls if logged in and renders login page if not
+});
+ 
+// DELETE/PUT ROUTES //
 app.delete('/urls/:id', (req,res) => { // POST / URLS / :ID / DELETE : deletes request id from url database
   const userURLs = userUrlsCheck(req.session.user_id, urlDatabase);
   const id = req.params.id;
@@ -75,17 +102,6 @@ app.delete('/urls/:id', (req,res) => { // POST / URLS / :ID / DELETE : deletes r
   } else {
     delete urlDatabase[id];
     res.redirect('/urls');
-  }
-});
-
-app.get('/u/:id', (req,res) => {// GET / U / :ID : sends users to url or if url is not in database sends html message
-  const userURLs = userUrlsCheck(req.session.user_id, urlDatabase); // gets users url object
-  const id = req.params.id;
-  if (!userURLs[id]) { // if id key is not in user object 
-    res.status(400).send('Error: You dont own this url');
-  } else {
-    const longURL = urlDatabase[id].longURL;
-  urlDatabase[id] ? res.redirect(longURL) : res.status(400).send('Cannot find URL');
   }
 });
 
@@ -104,13 +120,16 @@ app.put('/urls/:id', (req,res) => { // POST / URLS / :ID / EDIT : changes long u
   }
 });
 
-app.get('/urls/:id', (req,res) => { // GET / URLS / :ID : a catch all that renders a page for url in database or returns html error message
-  const userURLs = userUrlsCheck(req.session.user_id, urlDatabase);
-  if (!userURLs[req.params.id]) {
-    res.status(400).send('Error: You dont own this url');
-  } else {
-    const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id].longURL, users, userCookie: req.session.user_id};
-    urlDatabase[req.params.id] ? res.render('urls_show', templateVars) : res.status(400).send('Error: Cannot find url');
+// POST ROUTES //
+
+app.post('/urls', (req,res) => { // POST / URLS : creates urls and updates url database
+  if (!req.session.user_id) { 
+    res.end('Please log into account to use features'); // sends html response if POST request is made while not logged in
+  } else { 
+    const id = generateRandomString(); // make random url id
+    const url = req.body.longURL; // get url from parsed data from post
+    urlDatabase[id] = {longURL: url , userID: req.session.user_id, urlVisits: 0};
+    res.redirect(`/urls/${id}`);
   }
 });
 
@@ -119,10 +138,6 @@ app.post('/logout', (req,res) => { // POST / LOGOUT : clears user_id cookie when
   res.redirect('/login');
 });
 
-app.get('/register', (req,res) => { // GET / REGISTER : renders register page
-  const templateVars = {users, userCookie: req.session.user_id};
-  req.session.user_id ? res.redirect('/urls') : res.render('register',templateVars); // redirects to /urls if logged in and renders register page if not
-});
 
 app.post('/register', (req,res) => { // POST / REGISTER : if no errors will update users database with new user from request info and cookie with id
   const newID = generateRandomString(); // random str for new id
@@ -138,11 +153,6 @@ app.post('/register', (req,res) => { // POST / REGISTER : if no errors will upda
     users[newID] = newUser; // add new user to users database
     res.redirect('/urls');
   }
-});
-
-app.get('/login', (req,res) => { // GET / LOGIN : render login page
-  const templateVars = {users, userCookie: req.session.user_id};
-  req.session.user_id ? res.redirect('/urls') : res.render('login',templateVars); // redirects to /urls if logged in and renders login page if not
 });
 
 app.post('/login', (req,res) => { // POST / LOGIN : if no errors will update user_id cookie and log user into their account

@@ -18,8 +18,9 @@
     <table class="table">
       <thead>
         <tr>
-          <th scope="col">Short Url ID</th>
-          <th scope="col">Long Url ID</th>
+          <th scope="col">Short URL ID</th>
+          <th scope="col">Long URL ID</th>
+          <th scope="col">URL Visits</th>
           <th scope="col">Edit URLs</th>
           <th scope="col">Delete</th>
         </tr>
@@ -27,9 +28,11 @@
       <tbody>
         <% for (let shortIdObject in urls){%>
         <% let longURL = urls[shortIdObject].longURL %>
+        <% let visitsURL = urls[shortIdObject].urlVisits %>
           <tr>
             <td><%= shortIdObject %></td>
             <td><%= longURL %></td>
+            <td><%= visitsURL === 0 ? visitsURL : visitsURL - 1 %> visits</td>
             <td>
               <form method="GET" action="/urls/<%=shortIdObject%>">
                 <button type="submit" class="btn btnprimary">Edit</button>
