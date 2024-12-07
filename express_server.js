@@ -2,6 +2,7 @@ const {accountExistCheck,userUrlsCheck,generateRandomString} = require('./helper
 const express = require('express');
 const morgan = require('morgan');
 const cookieSession = require('cookie-session');
+const methodOverride = require('method-override');
 const bcrypt = require('bcryptjs');
 const salt = 10;
 const app = express();
@@ -14,7 +15,7 @@ app.use(cookieSession({
 app.use(morgan('dev')); // console logs requests and status codes from server
 app.set('view engine','ejs'); // Sets out default engine to ejs
 app.use(express.urlencoded({extended:true})); // creates and fills req.body
-
+app.use(methodOverride('_method'));
 // url database
 const urlDatabase = { // temporary contains seeds for development
   b2xVn2: {
@@ -66,7 +67,7 @@ app.get('/urls/new', (req,res) => { // GET / URLS / NEW : renders urls_new page
   req.session.user_id ? res.render('urls_new', templateVars) : res.redirect('/login');
 });
 
-app.post('/urls/:id/delete', (req,res) => { // POST / URLS / :ID / DELETE : deletes request id from url database
+app.delete('/urls/:id', (req,res) => { // POST / URLS / :ID / DELETE : deletes request id from url database
   const userURLs = userUrlsCheck(req.session.user_id, urlDatabase);
   const id = req.params.id;
   if (!userURLs[id]) {
@@ -88,7 +89,7 @@ app.get('/u/:id', (req,res) => {// GET / U / :ID : sends users to url or if url 
   }
 });
 
-app.post('/urls/:id/edit', (req,res) => { // POST / URLS / :ID / EDIT : changes long url value of id and updates url database
+app.put('/urls/:id', (req,res) => { // POST / URLS / :ID / EDIT : changes long url value of id and updates url database
   const userUrls = userUrlsCheck(req.session.user_id, urlDatabase);
   const id = req.params.id;
   const newURL = req.body.longURL;
