@@ -6,7 +6,7 @@ const methodOverride = require('method-override');
 const bcrypt = require('bcryptjs');
 const salt = 10;
 const app = express();
-const PORT = 8080;
+const PORT = 8081;
 
 app.use(cookieSession({
   name: 'session',
@@ -34,7 +34,7 @@ const urlDatabase = { // temporary contains seeds for development
 const users = { // temporary contains seeds for development
   user1 : {
     id: 'user1',
-    email: 'e@mail.com',
+    email: 'user1@example.com',
     password: bcrypt.hashSync('hippo', salt)
   }
 };
@@ -46,57 +46,63 @@ app.listen(PORT, () => {
 
 // GET ROUTES //
 
+app.get('/', (req,res) => {
+  req.session.userId ? res.redirect('/urls') : res.redirect('/login');
+});
 app.get('/urls', (req,res) => { // GET / URLS : renders index page
-  if (!req.session.user_id) {
-    res.redirect('/login');
+  if (!req.session.userId) {
+    res.status(400).send('Error: Please Login');
   } else {
-    const userURLs = userUrlsCheck(req.session.user_id, urlDatabase);
-    const templateVars = {urls:userURLs, users , userCookie: req.session.user_id};
+    const userURLs = userUrlsCheck(req.session.userId, urlDatabase);
+    const templateVars = {urls:userURLs, users , userCookie: req.session.userId};
     res.render('urls_index',templateVars);
   }
 });
 
 app.get('/urls/new', (req,res) => { // GET / URLS / NEW : renders urls_new page
-  const templateVars = {users, userCookie: req.session.user_id};
-  req.session.user_id ? res.render('urls_new', templateVars) : res.redirect('/login');
+  const templateVars = {users, userCookie: req.session.userId};
+  req.session.userId ? res.render('urls_new', templateVars) : res.redirect('/login');
 });
 
 app.get('/u/:id', (req,res) => {// GET / U / :ID : sends users to url or if url is not in database sends html message
   const id = req.params.id;
 
-  if(urlDatabase[id]){
+  if (urlDatabase[id]) {
     const longURL = urlDatabase[id].longURL;
     urlDatabase[id].urlVisits ++;
-    console.log(urlDatabase[id]);
     res.redirect(longURL);
   } else {
     res.status(400).send('Cannot find URL');
-  }  
+  }
 });
 
 app.get('/register', (req,res) => { // GET / REGISTER : renders register page
-  const templateVars = {users, userCookie: req.session.user_id};
-  req.session.user_id ? res.redirect('/urls') : res.render('register',templateVars); // redirects to /urls if logged in and renders register page if not
+  const templateVars = {users, userCookie: req.session.userId};
+  req.session.userId ? res.redirect('/urls') : res.render('register',templateVars); // redirects to /urls if logged in and renders register page if not
 });
 
 app.get('/login', (req,res) => { // GET / LOGIN : render login page
-  const templateVars = {users, userCookie: req.session.user_id};
-  req.session.user_id ? res.redirect('/urls') : res.render('login',templateVars); // redirects to /urls if logged in and renders login page if not
+  const templateVars = {users, userCookie: req.session.userId};
+  req.session.userId ? res.redirect('/urls') : res.render('login',templateVars); // redirects to /urls if logged in and renders login page if not
 });
 
 app.get('/urls/:id', (req,res) => { // GET / URLS / :ID : a catch all that renders a page for url in database or returns html error message
-  const userURLs = userUrlsCheck(req.session.user_id, urlDatabase);
-  if (!userURLs[req.params.id]) {
-    res.status(400).send('Error: You dont own this url');
+  const userURLs = userUrlsCheck(req.session.userId, urlDatabase);
+  if (!req.session.userId) {
+    res.status(400).send('Error: Please Login');
+  } else if (!urlDatabase[req.params.id]) {
+    res.status(400).send('Error: Cannot find URL');
+  } else if (!userURLs[req.params.id]) {
+    res.status(400).send('Error: You do not own this url');
   } else {
-    const templateVars = { id: req.params.id, url: urlDatabase[req.params.id], users, userCookie: req.session.user_id};
-    urlDatabase[req.params.id] ? res.render('urls_show', templateVars) : res.status(400).send('Error: Cannot find url');
+    const templateVars = { id: req.params.id, url: urlDatabase[req.params.id], users, userCookie: req.session.userId};
+    res.render('urls_show', templateVars);
   }
 });
  
 // DELETE/PUT ROUTES //
 app.delete('/urls/:id', (req,res) => { // POST / URLS / :ID / DELETE : deletes request id from url database
-  const userURLs = userUrlsCheck(req.session.user_id, urlDatabase);
+  const userURLs = userUrlsCheck(req.session.userId, urlDatabase);
   const id = req.params.id;
   if (!userURLs[id]) {
     res.status(400).send('Error: You dont own this url');
@@ -107,11 +113,11 @@ app.delete('/urls/:id', (req,res) => { // POST / URLS / :ID / DELETE : deletes r
 });
 
 app.put('/urls/:id', (req,res) => { // POST / URLS / :ID / EDIT : changes long url value of id and updates url database
-  const userUrls = userUrlsCheck(req.session.user_id, urlDatabase);
+  const userUrls = userUrlsCheck(req.session.userId, urlDatabase);
   const id = req.params.id;
   const newURL = req.body.longURL;
 
-  if (!userUrls[id]){
+  if (!userUrls[id]) {
     res.status(400).send('Error: You dont own this url');
   } else if (newURL === '') {
     res.status(400).send('Error: Cannot leave url empty');
@@ -124,17 +130,17 @@ app.put('/urls/:id', (req,res) => { // POST / URLS / :ID / EDIT : changes long u
 // POST ROUTES //
 
 app.post('/urls', (req,res) => { // POST / URLS : creates urls and updates url database
-  if (!req.session.user_id) { 
-    res.end('Please log into account to use features'); // sends html response if POST request is made while not logged in
-  } else { 
+  if (!req.session.userId) {
+    res.status(400).send('Error: Please Login'); // sends html response if POST request is made while not logged in
+  } else {
     const id = generateRandomString(); // make random url id
     const url = req.body.longURL; // get url from parsed data from post
-    urlDatabase[id] = {longURL: url , userID: req.session.user_id, urlVisits: 0};
+    urlDatabase[id] = {longURL: url , userID: req.session.userId, urlVisits: 0};
     res.redirect(`/urls/${id}`);
   }
 });
 
-app.post('/logout', (req,res) => { // POST / LOGOUT : clears user_id cookie when user logs out
+app.post('/logout', (req,res) => { // POST / LOGOUT : clears userId cookie when user logs out
   req.session = null;
   res.redirect('/login');
 });
@@ -145,20 +151,20 @@ app.post('/register', (req,res) => { // POST / REGISTER : if no errors will upda
   const newUser = {id: newID, email: req.body.email, password: bcrypt.hashSync(req.body.password, salt)}; // new object with request form values and cookie/id value and adds new user object to global database
   const verifyInfo = accountExistCheck(newUser,users); // should return false to verify no account with same info exist
 
-  if (newUser.email === '' || newUser.password === '') { // errors for empty form fields or register an existing account
+  if (newUser.email === '' || bcrypt.compareSync('', newUser.password)) { // errors for empty form fields or register an existing account
     res.status(400).send('Error with registering: Please fill in the fields');
   } else if (verifyInfo !== false) {
     res.status(400).send('Error with registering: Account already exist');
   } else {
-    req.session.user_id = newID; // create cookie with id value
+    req.session.userId = newID; // create cookie with id value
     users[newID] = newUser; // add new user to users database
     res.redirect('/urls');
   }
 });
 
-app.post('/login', (req,res) => { // POST / LOGIN : if no errors will update user_id cookie and log user into their account
+app.post('/login', (req,res) => { // POST / LOGIN : if no errors will update userId cookie and log user into their account
   const loginInfo = {email: req.body.email, password: req.body.password};
-  const verifyInfo = accountExistCheck(loginInfo,users); //should return account id to create new user_id cookie for the user
+  const verifyInfo = accountExistCheck(loginInfo,users); //should return account id to create new userId cookie for the user
 
   if (loginInfo.email === '' || loginInfo.password === '') { // errors for empty fields, account not being found, or incorrect password
     res.status(400).send('Error with login: Please fill in the fields');
@@ -167,7 +173,7 @@ app.post('/login', (req,res) => { // POST / LOGIN : if no errors will update use
   } else if (!bcrypt.compareSync(loginInfo.password, users[verifyInfo].password)) {
     res.status(400).send('Error with login: Password is incorrect');
   } else {
-    req.session.user_id = verifyInfo; // updates cookie to new account id
+    req.session.userId = verifyInfo; // updates cookie to new account id
     res.redirect('/urls');
   }
 });
