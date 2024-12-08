@@ -18,26 +18,9 @@ app.use(express.urlencoded({extended:true})); // creates and fills req.body
 app.use(methodOverride('_method'));
 
 // url database
-const urlDatabase = { // temporary contains seeds for development
-  b2xVn2: {
-    longURL:"http://www.lighthouselabs.ca",
-    userID: 'user1',
-    urlVisits: 0
-  },
-  "9sm5xK": {
-    longURL:"http://www.google.com",
-    userID : 'user1',
-    urlVisits: 0
-  },
-};
+const urlDatabase = {}; // temporary contains seeds for development
 // user database
-const users = { // temporary contains seeds for development
-  user1 : {
-    id: 'user1',
-    email: 'user1@example.com',
-    password: bcrypt.hashSync('hippo', salt)
-  }
-};
+const users = {}; // temporary contains seeds for development
 
 
 app.listen(PORT, () => {
