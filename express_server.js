@@ -67,20 +67,11 @@ app.get('/u/:id', (req,res) => {// GET / U / :ID : sends users to url or if url 
   if(urlDatabase[id]){
     const longURL = urlDatabase[id].longURL;
     urlDatabase[id].urlVisits ++;
+    console.log(urlDatabase[id]);
     res.redirect(longURL);
   } else {
     res.status(400).send('Cannot find URL');
   }  
-});
-
-app.get('/urls/:id', (req,res) => { // GET / URLS / :ID : a catch all that renders a page for url in database or returns html error message
-  const userURLs = userUrlsCheck(req.session.user_id, urlDatabase);
-  if (!userURLs[req.params.id]) {
-    res.status(400).send('Error: You dont own this url');
-  } else {
-    const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id].longURL, users, userCookie: req.session.user_id};
-    urlDatabase[req.params.id] ? res.render('urls_show', templateVars) : res.status(400).send('Error: Cannot find url');
-  }
 });
 
 app.get('/register', (req,res) => { // GET / REGISTER : renders register page
@@ -91,6 +82,16 @@ app.get('/register', (req,res) => { // GET / REGISTER : renders register page
 app.get('/login', (req,res) => { // GET / LOGIN : render login page
   const templateVars = {users, userCookie: req.session.user_id};
   req.session.user_id ? res.redirect('/urls') : res.render('login',templateVars); // redirects to /urls if logged in and renders login page if not
+});
+
+app.get('/urls/:id', (req,res) => { // GET / URLS / :ID : a catch all that renders a page for url in database or returns html error message
+  const userURLs = userUrlsCheck(req.session.user_id, urlDatabase);
+  if (!userURLs[req.params.id]) {
+    res.status(400).send('Error: You dont own this url');
+  } else {
+    const templateVars = { id: req.params.id, url: urlDatabase[req.params.id], users, userCookie: req.session.user_id};
+    urlDatabase[req.params.id] ? res.render('urls_show', templateVars) : res.status(400).send('Error: Cannot find url');
+  }
 });
  
 // DELETE/PUT ROUTES //

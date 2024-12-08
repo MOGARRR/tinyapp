@@ -16,10 +16,14 @@
     <div class="card text center">
       <div class="card-header"></div>
       <div class="card-body">
-        <h5 class="card-text">TinyURL for: <%= longURL %></h5>
+        <h5 class="card-text">TinyURL for: <%= url.longURL %></h5>
         <p>
           Short URL ID <a href="/u/<%= id %>"><%= id %></a>
         </p>
+      </div>
+      <div>
+        <h5>Total URL Visits: <%= url.urlVisits === 0 ? url.urlVisits : url.urlVisits - 1  %></h5>
+
       </div>
       <div class="card-body">
         <h5 class="card-header">Edit</h5>
@@ -30,14 +34,13 @@
               class="form-control" 
               type="text"
               name="longURL"
-              value= <%= longURL %>
+              value= <%= url.longURL %>
               style="width: 300px; margin: 1em;"
               />
               <button type="submit" class="btn btnprimary">Submit</button>
           </div>
         </form>
       </div>
-      
       <div class="card-footer text-muted"></div>
     </div>
     <script
